@@ -1,4 +1,3 @@
-
 #include <Arduino.h>
 #include <SIM76xx.h>
 #include <GSMClientSecure.h>
