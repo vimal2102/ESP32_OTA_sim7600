@@ -3,7 +3,7 @@
 #include <SIM76xx.h>
 #include <GSMClientSecure.h>
 #include <Update.h>
-
+#define led 2
 // Config
 #define SIM76XX_RX_PIN 16
 #define SIM76XX_TX_PIN 17
@@ -19,7 +19,8 @@ GSMClientSecure client;
 
 void setup() {
   Serial.begin(115200);
-  
+  pinMode(led,OUTPUT);
+ digitalWrite(led,HIGH);
   // Initialize GSM
   while (!myGSM.begin()) {
     Serial.println("GSM Failed. Retrying...");
