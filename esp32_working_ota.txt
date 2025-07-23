@@ -10,8 +10,8 @@
 #define SIM76XX_PWR_PIN 4
 
 String host = "raw.githubusercontent.com";
-String binPath = "/vimal2102/OTA_2ND_TEST/main/testing_ota.ino.bin"; // Your .bin path
-String versionPath = "/vimal2102/OTA_2ND_TEST/main/version.txt"; // Version file
+String binPath = "/vimal2102/ESP32_OTA_sim7600/main/esp32_working_ota.ino.bin";  // Your .bin path
+String versionPath = "/vimal2102/ESP32_OTA_sim7600/main/esp32_working_ota.txt";  // Version file
 String currentVersion = "1.0"; // Must match initial version.txt
 
 SIM76XX myGSM(SIM76XX_RX_PIN, SIM76XX_TX_PIN, SIM76XX_PWR_PIN);
