@@ -1,4 +1,4 @@
- 
+
 #include <Arduino.h>
 #include <SIM76xx.h>
 #include <GSMClientSecure.h>
@@ -10,32 +10,34 @@
 #define SIM76XX_PWR_PIN 4
 
 String host = "raw.githubusercontent.com";
+//https://github.com/vimal2102/ESP32_OTA_sim7600/raw/refs/heads/main/esp32_working_ota.ino
 String binPath = "/vimal2102/ESP32_OTA_sim7600/main/esp32_working_ota.ino.bin";  // Your .bin path
+//https://github.com/vimal2102/ESP32_OTA_sim7600/raw/refs/heads/main/esp32_working_ota.txt
 String versionPath = "/vimal2102/ESP32_OTA_sim7600/main/esp32_working_ota.txt";  // Version file
-String currentVersion = "1.0"; // Must match initial version.txt
+String currentVersion = "1.0";                                                   // Must match initial version.txt
 
 SIM76XX myGSM(SIM76XX_RX_PIN, SIM76XX_TX_PIN, SIM76XX_PWR_PIN);
 GSMClientSecure client;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(led,OUTPUT);
- digitalWrite(led,HIGH);
+  pinMode(led, OUTPUT);
+  digitalWrite(led,HIGH);
   // Initialize GSM
   while (!myGSM.begin()) {
     Serial.println("GSM Failed. Retrying...");
     delay(2000);
   }
 
-  checkForUpdates(); // Check once on startup
+  checkForUpdates();  // Check once on startup
 }
 
-void loop() {} // Not used
+void loop() {}  // Not used
 
 // Check for new version
 void checkForUpdates() {
   String latestVersion = getLatestVersion();
-  
+
   if (latestVersion != currentVersion && latestVersion != "") {
     Serial.println("New version found: " + latestVersion);
     execOTA();
@@ -47,21 +49,21 @@ void checkForUpdates() {
 // Get version from GitHub
 String getLatestVersion() {
   client.setInsecure();
-  
+
   if (client.connect(host.c_str(), 443)) {
     client.print(String("GET ") + versionPath + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n");
-    
+
     // Skip headers
     while (client.connected()) {
       String line = client.readStringUntil('\n');
       if (line == "\r") break;
     }
-    
+
     String version = client.readString();
-    version.trim(); // Modify the string in place
-    return version; // Then return it
+    version.trim();  // Modify the string in place
+    return version;  // Then return it
   }
-  return ""; // Return empty if failed
+  return "";  // Return empty if failed
 }
 
 // OTA Update Function (unchanged from your working version)
