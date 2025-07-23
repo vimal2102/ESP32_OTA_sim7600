@@ -1,0 +1,117 @@
+
+#include <Arduino.h>
+#include <SIM76xx.h>
+#include <GSMClientSecure.h>
+#include <Update.h>
+
+// Config
+#define SIM76XX_RX_PIN 16
+#define SIM76XX_TX_PIN 17
+#define SIM76XX_PWR_PIN 4
+
+String host = "raw.githubusercontent.com";
+String binPath = "/vimal2102/OTA_2ND_TEST/main/testing_ota.ino.bin"; // Your .bin path
+String versionPath = "/vimal2102/OTA_2ND_TEST/main/version.txt"; // Version file
+String currentVersion = "1.0"; // Must match initial version.txt
+
+SIM76XX myGSM(SIM76XX_RX_PIN, SIM76XX_TX_PIN, SIM76XX_PWR_PIN);
+GSMClientSecure client;
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Initialize GSM
+  while (!myGSM.begin()) {
+    Serial.println("GSM Failed. Retrying...");
+    delay(2000);
+  }
+
+  checkForUpdates(); // Check once on startup
+}
+
+void loop() {} // Not used
+
+// Check for new version
+void checkForUpdates() {
+  String latestVersion = getLatestVersion();
+  
+  if (latestVersion != currentVersion && latestVersion != "") {
+    Serial.println("New version found: " + latestVersion);
+    execOTA();
+  } else {
+    Serial.println("Already on latest version");
+  }
+}
+
+// Get version from GitHub
+String getLatestVersion() {
+  client.setInsecure();
+  
+  if (client.connect(host.c_str(), 443)) {
+    client.print(String("GET ") + versionPath + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n");
+    
+    // Skip headers
+    while (client.connected()) {
+      String line = client.readStringUntil('\n');
+      if (line == "\r") break;
+    }
+    
+    String version = client.readString();
+    version.trim(); // Modify the string in place
+    return version; // Then return it
+  }
+  return ""; // Return empty if failed
+}
+
+// OTA Update Function (unchanged from your working version)
+void execOTA() {
+  client.setInsecure();
+  client.setTimeout(30000);
+
+  Serial.println("Connecting to: " + String(host));
+  if (client.connect(host.c_str(), 443)) {
+    client.print(String("GET ") + binPath + " HTTP/1.1\r\nHost: " + host + "\r\n\r\n");
+
+    // Parse headers
+    long contentLength = 0;
+    while (client.connected()) {
+      String line = client.readStringUntil('\n');
+      if (line.startsWith("Content-Length: ")) {
+        contentLength = line.substring(16).toInt();
+      }
+      if (line == "\r") break;
+    }
+
+    if (contentLength == 0) {
+      Serial.println("Invalid file size!");
+      return;
+    }
+
+    Serial.printf("File Size: %d bytes\n", contentLength);
+    Serial.printf("Free Space: %d bytes\n", ESP.getFreeSketchSpace());
+
+    if (Update.begin(contentLength)) {
+      Serial.println("OTA Update Started");
+      uint8_t buffer[4096];
+      size_t written = 0;
+      while (written < contentLength) {
+        size_t read = client.readBytes(buffer, (sizeof(buffer) < (contentLength - written)) ? sizeof(buffer) : (contentLength - written));
+        if (read == 0) break;
+        Update.write(buffer, read);
+        written += read;
+        Serial.printf("Progress: %d%%\r", (written * 100) / contentLength);
+        delay(10);
+      }
+
+      if (written == contentLength && Update.end()) {
+        Serial.println("\nOTA Success! Rebooting...");
+        ESP.restart();
+      } else {
+        Serial.println("\nOTA Failed: " + String(Update.getError()));
+      }
+    } else {
+      Serial.println("Not enough space for OTA");
+    }
+  }
+  client.stop();
+}
